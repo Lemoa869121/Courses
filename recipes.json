@@ -194,5 +194,239 @@
       "Remettre 5 minutes au four pour gratiner."
     ],
     "notes": "Préparation 20 min, cuisson 40 min, niveau moyen.\nImportée de WeChef (série « Kiff ou Skip »)."
+  },
+  {
+    "id": "local-mwpi08l3i64omo",
+    "name": "Gnocchis de patate douce et épinards",
+    "servings": 4,
+    "category": "Pâtes & riz",
+    "prepTime": 40,
+    "ingredients": [
+      {
+        "name": "patate douce cuite",
+        "qty": 1,
+        "unit": "",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "épinards cuits",
+        "qty": 150,
+        "unit": "g",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "farine",
+        "qty": 250,
+        "unit": "g",
+        "aisle": "Épicerie salée"
+      },
+      {
+        "name": "jaunes d'œuf",
+        "qty": 2,
+        "unit": "",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "œuf",
+        "qty": 1,
+        "unit": "",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "c. à café de sel",
+        "qty": 1,
+        "unit": "",
+        "aisle": "Boissons"
+      },
+      {
+        "name": "thym frais",
+        "qty": 1,
+        "unit": "pincée",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "crème liquide entière",
+        "qty": null,
+        "unit": "",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "parmesan",
+        "qty": 1,
+        "unit": "",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "c. à soupe d'huile d'olive",
+        "qty": 1,
+        "unit": "",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "c. à soupe de beurre",
+        "qty": 1,
+        "unit": "",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "c. à café de purée d'ail",
+        "qty": 1,
+        "unit": "",
+        "aisle": "Boissons"
+      }
+    ],
+    "steps": [
+      "Écraser la patate douce cuite et les épinards hachés dans un bol.",
+      "Dans un autre bol, fouetter les jaunes d'œuf et l'œuf entier. Ajouter la purée de patate douce et d'épinards, puis bien mélanger.",
+      "Ajouter le sel, la farine et l'huile d'olive au mélange. Former une pâte collante. Astuce: La pâte sera collante, c'est normal.",
+      "Huiler légèrement les mains et former des boulettes avec la pâte. Astuce: Utiliser de l'huile d'olive pour éviter que la pâte ne colle aux mains.",
+      "Cuire les boulettes dans une eau bouillante salée. Lorsqu'elles remontent à la surface, elles sont cuites (environ 5-6 minutes).",
+      "Faire fondre le beurre et l'huile d'olive dans une poêle, ajouter le thym frais et faire griller les gnocchis.",
+      "Ajouter la crème liquide et la purée d'ail dans la poêle, puis les lamelles de parmesan. Laisser mijoter à feu très doux pendant 10 minutes."
+    ],
+    "notes": "Un plat idéal pour faire manger des légumes aux enfants de manière gourmande."
+  },
+  {
+    "id": "local-mwpi0pzwkdxspa",
+    "name": "Pâtes carbonara à l'ail confit",
+    "servings": 3,
+    "category": "Pâtes & riz",
+    "prepTime": 50,
+    "ingredients": [
+      {
+        "name": "pâtes",
+        "qty": 500,
+        "unit": "g",
+        "aisle": "Épicerie salée"
+      },
+      {
+        "name": "tête d'ail",
+        "qty": 1,
+        "unit": "",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "parmesan",
+        "qty": 80,
+        "unit": "g",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "persil ciselé",
+        "qty": 6,
+        "unit": "g",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "beurre mou",
+        "qty": 30,
+        "unit": "g",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "jaunes d'œufs",
+        "qty": 3,
+        "unit": "",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "lard fumé (ou guanciale)",
+        "qty": 250,
+        "unit": "g",
+        "aisle": "Autres"
+      },
+      {
+        "name": "poivre",
+        "qty": 1,
+        "unit": "pincée",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "sel",
+        "qty": 1,
+        "unit": "pincée",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "huile",
+        "qty": null,
+        "unit": "",
+        "aisle": "Condiments & épices"
+      }
+    ],
+    "steps": [
+      "Couper le chapeau de la tête d'ail, la mettre dans une mini cocotte ou en papillote avec une pincée de sel et un filet d'huile. Cuire pendant 35 minutes à 200 degrés.",
+      "Dans un saladier, ajouter le parmesan, le persil, le beurre et les jaunes d'œufs.",
+      "Couper les tranches de lard en morceaux et les faire cuire à la poêle jusqu'à ce qu'ils soient bien grillés. Verser un peu du gras dans la sauce pour la rendre plus onctueuse.",
+      "Mixer les morceaux de lard, les ajouter à la sauce, presser la tête d'ail, écraser la chair et l'ajouter aussi. Bien mélanger, sans oublier l'eau de cuisson.",
+      "Ajouter les pâtes cuites à la sauce et mélanger."
+    ],
+    "notes": "Cette version avec le goût de l'ail confit et le crémeux de la sauce est un pur délice."
+  },
+  {
+    "id": "local-mwpi160bpdi5gj",
+    "name": "Génoise",
+    "servings": 8,
+    "category": "Dessert",
+    "prepTime": 40,
+    "ingredients": [
+      {
+        "name": "œufs",
+        "qty": 5,
+        "unit": "",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "sucre",
+        "qty": 100,
+        "unit": "g",
+        "aisle": "Épicerie sucrée"
+      },
+      {
+        "name": "farine tamisée",
+        "qty": 90,
+        "unit": "g",
+        "aisle": "Épicerie salée"
+      },
+      {
+        "name": "levure chimique",
+        "qty": 2,
+        "unit": "g",
+        "aisle": "Épicerie sucrée"
+      },
+      {
+        "name": "lait",
+        "qty": 50,
+        "unit": "ml",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "huile",
+        "qty": 50,
+        "unit": "ml",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "sel",
+        "qty": 1,
+        "unit": "pincée",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "vanille ou zeste d'agrumes",
+        "qty": 1,
+        "unit": "",
+        "aisle": "Épicerie sucrée"
+      }
+    ],
+    "steps": [
+      "Séparer les blancs des jaunes d'œufs. Monter les blancs en neige avec une partie du sucre. Astuce: Monter les blancs jusqu'à ce qu'ils soient bien fermes.",
+      "Dans un autre bol, fouetter les jaunes avec le reste du sucre, une pincée de sel et un peu de vanille ou de zeste d'agrumes. Astuce: Fouetter jusqu'à ce que le mélange blanchisse.",
+      "Ajouter le lait et l'huile au mélange de jaunes d'œufs, puis incorporer la farine et la levure tamisée. Astuce: Mélanger doucement pour éviter les grumeaux.",
+      "Incorporer délicatement les blancs montés au mélange précédent avec une maryse, du bas vers le haut. Astuce: Ne pas casser les blancs en neige.",
+      "Étaler la pâte sur une plaque de cuisson recouverte de papier sulfurisé. Cuire au four pendant 18 à 20 minutes à 180 degrés. Astuce: Mettre un peu de pâte aux coins de la plaque pour éviter que le papier ne glisse.",
+      "Retirer le papier cuisson, découper les bords pour un résultat net, et enrouler la génoise dans un torchon propre. Astuce: Laisser refroidir avant de garnir."
+    ],
+    "notes": "Cette génoise est idéale pour réaliser des bûches roulées."
   }
 ]
