@@ -1,4 +1,8 @@
+import { extractItems, parseRecipeItems } from "./pdfimport.js";
+
 /* ============ Constantes ============ */
+const UNITS = ["","g","kg","ml","cl","l","pièce","c. à s.","c. à c.","pincée","gousse","tranche","botte","sachet","boîte","pot","paquet"];
+const CATS = ["Viande","Poisson","Végé","Pâtes & riz","Soupe","Salade","Dessert","Autre"];
 const AISLES = ["Fruits & légumes","Boucherie & poisson","Crèmerie & œufs","Boulangerie","Épicerie salée","Épicerie sucrée","Condiments & épices","Surgelés","Boissons","Hygiène & maison","Autres"];
 const KW = [
  ["Fruits & légumes","tomate carotte oignon échalote ail poireau courgette aubergine poivron salade laitue épinard chou brocoli champignon pomme poire banane citron orange fraise framboise avocat concombre radis patate navet céleri fenouil haricot persil coriandre basilic menthe ciboulette thym romarin gingembre potiron butternut courge mangue ananas kiwi raisin abricot pêche cerise betterave endive asperge artichaut"],
@@ -50,14 +54,19 @@ const state={
 };
 
 /* ============ Recettes (fichier du dépôt) ============ */
+let repoRecipes=[];
+function mergeRecipes(){
+  const mine=Local.get("myrecipes",[]).filter(r=>r&&r.id&&r.name).map(r=>({...r,local:true}));
+  state.recipes=[...repoRecipes,...mine];
+}
 async function loadRecipes(){
   try{
     const res=await fetch("recipes.json?v="+Date.now(),{cache:"no-store"});
     if(!res.ok)throw new Error(res.status);
     const data=await res.json();
-    state.recipes=(Array.isArray(data)?data:[]).filter(r=>r&&r.id&&r.name);
+    repoRecipes=(Array.isArray(data)?data:[]).filter(r=>r&&r.id&&r.name);
   }catch(e){state.recipesError=true}
-  renderAll();
+  mergeRecipes();renderAll();
 }
 
 /* ============ Stockage sur l'appareil ============ */
@@ -224,7 +233,7 @@ function renderRecipes(){
   if(!n){$("#rec-list").innerHTML=`<div class="empty"><h3>Ton carnet est vide</h3></div>`;return}
   if(!list.length){$("#rec-list").innerHTML=`<div class="empty">Aucun résultat</div>`;return}
   const inPlan=new Set(state.plan.items.map(i=>i.rid));
-  $("#rec-list").innerHTML=list.map(r=>`<div class="card rec" data-open="${esc(r.id)}"><div class="grow"><h3>${esc(r.name)}</h3><div class="meta">${r.category?`<span class="tag">${esc(r.category)}</span> · `:""}${r.servings||"?"} pers. · ${(r.ingredients||[]).length} ingrédients${inPlan.has(r.id)?" · <b style='color:var(--accent)'>au menu</b>":""}</div></div><svg viewBox="0 0 24 24" style="color:var(--muted)"><path d="m9 18 6-6-6-6"/></svg></div>`).join("");
+  $("#rec-list").innerHTML=list.map(r=>`<div class="card rec" data-open="${esc(r.id)}"><div class="grow"><h3>${esc(r.name)}</h3><div class="meta">${r.category?`<span class="tag">${esc(r.category)}</span> · `:""}${r.servings||"?"} pers. · ${(r.ingredients||[]).length} ingrédients${inPlan.has(r.id)?" · <b style='color:var(--accent)'>au menu</b>":""}${r.local?" · sur ce téléphone":""}</div></div><svg viewBox="0 0 24 24" style="color:var(--muted)"><path d="m9 18 6-6-6-6"/></svg></div>`).join("");
   $$("[data-open]").forEach(c=>c.onclick=()=>openRecipe(c.dataset.open));
 }
 $("#rec-search").oninput=e=>{recFilter=e.target.value;renderRecipes()};
@@ -311,8 +320,18 @@ function openRecipe(id){
   <div class="card" style="margin-top:6px;padding:6px 14px">${(r.ingredients||[]).map(i=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span class="grow">${esc(i.name)}</span><span class="sub">${i.qty!==null&&i.qty!==undefined&&i.qty!==""?esc(String(i.qty).replace(".",","))+" "+esc(i.unit||""):""}</span></div>`).join("")}</div>
   ${(r.steps||[]).length?`<h3 style="margin-top:16px">Préparation</h3><div class="steps-view"><ol>${r.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div>`:""}
   ${r.notes?`<div class="notes">${esc(r.notes)}</div>`:""}
-  <button class="btn block" id="sh-plan" style="margin-top:18px" ${inPlan?"disabled":""}>${inPlan?"Déjà au menu":"Ajouter au menu"}</button>`);
+  <button class="btn block" id="sh-plan" style="margin-top:18px" ${inPlan?"disabled":""}>${inPlan?"Déjà au menu":"Ajouter au menu"}</button>
+  ${r.local?`<div class="row" style="margin-top:8px;gap:8px"><button class="btn ghost grow" id="sh-edit">Modifier</button><button class="btn ghost grow" id="sh-del" style="color:var(--accent)">Supprimer</button></div>`:`<p class="sub" style="text-align:center;margin-top:10px">Recette du site : pour la modifier, demande à Claude.</p>`}`);
   $("#sh-close").onclick=closeSheet;
+  if(r.local){
+    $("#sh-edit").onclick=()=>openEditor(JSON.parse(JSON.stringify(r)));
+    let armed=false;
+    $("#sh-del").onclick=()=>{
+      if(!armed){armed=true;$("#sh-del").textContent="Confirmer";return}
+      Local.put("myrecipes",Local.get("myrecipes",[]).filter(x=>x.id!==id));mergeRecipes();
+      const p=clonePlan();p.items=p.items.filter(i=>i.rid!==id);Store.setPlan(p);closeSheet();toast("Recette supprimée");
+    };
+  }
   $("#sh-plan").onclick=()=>{const p=clonePlan();p.items.push({rid:id,servings:state.settings.people});Store.setPlan(p);closeSheet();toast("Ajoutée au menu")};
 }
 function openPicker(){
@@ -321,6 +340,100 @@ function openPicker(){
   openSheet(`<h2>Ajouter au menu</h2><div class="stack" style="margin-top:12px">${pool.map(r=>`<div class="card rec" data-pick="${esc(r.id)}"><div class="grow"><h3>${esc(r.name)}</h3></div><span style="color:var(--accent);font-weight:700">+</span></div>`).join("")||"<div class='empty'>Toutes tes recettes sont déjà au menu</div>"}</div>`);
   $$("[data-pick]").forEach(c=>c.onclick=()=>{const p=clonePlan();p.items.push({rid:c.dataset.pick,servings:state.settings.people});Store.setPlan(p);closeSheet()});
 }
+
+
+/* ============ Ajout de recettes sur l'appareil ============ */
+let edit=null;
+const blankIng=()=>({name:"",qty:null,unit:"",aisle:""});
+function openEditor(r){
+  edit=r||{id:"local-"+uid(),name:"",servings:state.settings.people,category:"",prepTime:"",ingredients:[blankIng()],steps:[],notes:""};
+  if(!edit.ingredients||!edit.ingredients.length)edit.ingredients=[blankIng()];
+  const isNew=!state.recipes.some(x=>x.id===edit.id);
+  openSheet(`<div class="row"><h2 class="grow">${isNew?"Nouvelle recette":"Modifier la recette"}</h2><button class="icon-btn" id="ed-close">${ICON_X}</button></div>
+  ${edit._fromPdf?`<div class="banner" style="margin-top:10px">Vérifie ce que j'ai lu dans le PDF avant d'enregistrer, surtout les noms d'ingrédients et les rayons.</div>`:""}
+  <label class="f">Nom</label><input type="text" id="ed-name" value="${esc(edit.name)}" placeholder="Ex. : Curry de pois chiches">
+  <div class="row" style="gap:10px">
+    <div class="grow"><label class="f">Pour combien de personnes ?</label><input type="number" id="ed-serv" min="1" value="${esc(edit.servings||"")}"></div>
+    <div class="grow"><label class="f">Temps total (min)</label><input type="number" id="ed-time" min="0" value="${esc(edit.prepTime||"")}"></div>
+  </div>
+  <label class="f">Catégorie</label>
+  <div class="chips" id="ed-cats">${CATS.map(c=>`<button type="button" class="chip ${edit.category===c?"on":""}" data-ecat="${c}">${c}</button>`).join("")}</div>
+  <label class="f">Ingrédients <span style="font-weight:400">(laisse la quantité vide pour « selon besoin »)</span></label>
+  <div id="ed-ings"></div>
+  <button class="btn ghost small" id="ed-add-ing">+ Ingrédient</button>
+  <label class="f">Étapes (une par ligne, facultatif)</label>
+  <textarea id="ed-steps">${esc((edit.steps||[]).join("\n"))}</textarea>
+  <label class="f">Notes (facultatif)</label>
+  <textarea id="ed-notes" style="min-height:60px">${esc(edit.notes||"")}</textarea>
+  <button class="btn block" id="ed-save" style="margin-top:16px">Enregistrer</button>`);
+  renderIngs();
+  $("#ed-close").onclick=closeSheet;
+  $$("[data-ecat]").forEach(b=>b.onclick=()=>{edit.category=edit.category===b.dataset.ecat?"":b.dataset.ecat;$$("[data-ecat]").forEach(x=>x.classList.toggle("on",x.dataset.ecat===edit.category))});
+  $("#ed-add-ing").onclick=()=>{syncIngs();edit.ingredients.push(blankIng());renderIngs();const all=$$(".ing-name");all[all.length-1].focus()};
+  $("#ed-save").onclick=saveEditor;
+}
+function renderIngs(){
+  $("#ed-ings").innerHTML=edit.ingredients.map((i,k)=>`<div class="ing-block"><div class="ing">
+    <input type="text" class="ing-name" data-k="${k}" placeholder="Ingrédient" value="${esc(i.name)}">
+    <input type="number" class="ing-qty" step="any" min="0" placeholder="Qté" value="${i.qty===null||i.qty===undefined?"":esc(i.qty)}">
+    <select class="ing-unit">${UNITS.map(u=>`<option value="${esc(u)}" ${u===(i.unit||"")?"selected":""}>${u||"—"}</option>`).join("")}</select>
+    <button class="icon-btn" data-delk="${k}" title="Retirer">${ICON_X}</button>
+    <select class="aisle-sel" data-k="${k}">${AISLES.map(a=>`<option ${a===(i.aisle||guessAisle(i.name))?"selected":""}>${esc(a)}</option>`).join("")}</select>
+  </div></div>`).join("");
+  $$(".ing-name").forEach(inp=>inp.addEventListener("change",()=>{
+    const k=+inp.dataset.k;if(edit.ingredients[k]&&edit.ingredients[k].aisleManual)return;
+    $(`.aisle-sel[data-k="${k}"]`).value=guessAisle(inp.value)}));
+  $$(".aisle-sel").forEach(s=>s.addEventListener("change",()=>{edit.ingredients[+s.dataset.k].aisleManual=true}));
+  $$("[data-delk]").forEach(b=>b.onclick=()=>{syncIngs();edit.ingredients.splice(+b.dataset.delk,1);if(!edit.ingredients.length)edit.ingredients.push(blankIng());renderIngs()});
+}
+function syncIngs(){
+  edit.ingredients=[...$$("#ed-ings .ing")].map((b,k)=>{const q=b.querySelector(".ing-qty").value;return{
+    name:b.querySelector(".ing-name").value.trim(),qty:q===""?null:Number(q),unit:b.querySelector(".ing-unit").value,
+    aisle:b.querySelector(".aisle-sel").value,aisleManual:edit.ingredients[k]&&edit.ingredients[k].aisleManual}});
+}
+function saveEditor(){
+  syncIngs();
+  const name=$("#ed-name").value.trim();
+  if(!name){toast("Donne un nom à la recette");$("#ed-name").focus();return}
+  const ings=edit.ingredients.filter(i=>i.name).map(({name,qty,unit,aisle})=>({name,qty:qty===null||isNaN(qty)?null:qty,unit,aisle}));
+  if(!ings.length){toast("Ajoute au moins un ingrédient");return}
+  const r={id:edit.id,name,servings:Math.max(1,parseInt($("#ed-serv").value)||state.settings.people),
+    category:edit.category||"",prepTime:parseInt($("#ed-time").value)||null,ingredients:ings,
+    steps:$("#ed-steps").value.split("\n").map(s=>s.trim()).filter(Boolean),notes:$("#ed-notes").value.trim()};
+  const mine=Local.get("myrecipes",[]);const i=mine.findIndex(x=>x.id===r.id);
+  if(i>=0)mine[i]=r;else mine.push(r);
+  if(!Local.put("myrecipes",mine))return;
+  mergeRecipes();renderAll();closeSheet();toast("Recette enregistrée");
+}
+
+let pdfjsLib=null;
+async function importPdf(file){
+  openSheet(`<h2>Lecture du PDF…</h2><div class="row" style="margin-top:14px"><div class="spinner" style="color:var(--accent)"></div><span class="sub">${esc(file.name)}</span></div>`);
+  try{
+    if(!pdfjsLib){pdfjsLib=await import("./lib/pdf.min.mjs");pdfjsLib.GlobalWorkerOptions.workerSrc=new URL("./lib/pdf.worker.min.mjs",location.href).href}
+    const data=new Uint8Array(await file.arrayBuffer());
+    const parsed=parseRecipeItems(await extractItems(pdfjsLib,data));
+    if(!parsed.name&&!parsed.ingredients.length)throw new Error("rien");
+    parsed.ingredients=parsed.ingredients.map(i=>({...i,aisle:guessAisle(i.name)}));
+    const r={id:"local-"+uid(),category:"",...parsed,_fromPdf:true};
+    if(!parsed.ingredients.length)toast("Ingrédients non trouvés : ajoute-les à la main");
+    openEditor(r);
+  }catch(e){
+    console.error(e);
+    openSheet(`<h2>PDF illisible</h2><p class="sub">Je n'ai pas trouvé de texte de recette dans ce fichier (c'est souvent le cas d'un scan ou d'une photo). Tu peux saisir la recette à la main, ou l'envoyer à Claude.</p><button class="btn block" id="pdf-manual" style="margin-top:12px">Saisir à la main</button>`);
+    $("#pdf-manual").onclick=()=>openEditor();
+  }
+}
+$("#add-pdf").onclick=()=>{$("#pdf-input").value="";$("#pdf-input").click()};
+$("#pdf-input").onchange=e=>{const f=e.target.files&&e.target.files[0];if(f)importPdf(f)};
+$("#add-form").onclick=()=>openEditor();
+$("#export-mine").onclick=async()=>{
+  const mine=Local.get("myrecipes",[]);
+  if(!mine.length){toast("Aucune recette ajoutée sur ce téléphone");return}
+  const txt=JSON.stringify(mine,null,2);
+  try{await navigator.clipboard.writeText(txt);toast(`${mine.length} recette${mine.length>1?"s":""} copiée${mine.length>1?"s":""}`)}
+  catch(e){openSheet(`<h2>Mes recettes</h2><p class="sub">Sélectionne et copie le texte :</p><textarea style="min-height:300px">${esc(txt)}</textarea>`)}
+};
 
 /* ============ Démarrage ============ */
 setTab("menu");

@@ -31,7 +31,11 @@
     <header class="top">
       <div><h1>Recettes</h1><div class="sub" id="rec-count"></div></div>
     </header>
-    <div class="banner" style="background:var(--green-soft);color:var(--green)">Pour ajouter ou modifier une recette, envoie-la à Claude (texte, lien ou photo) : elle apparaîtra ici après la mise à jour du site.</div>
+    <div class="add-grid" style="grid-template-columns:1fr 1fr">
+      <button class="btn soft" id="add-pdf"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 18v-6M9 15l3 3 3-3"/></svg>Importer un PDF</button>
+      <button class="btn soft" id="add-form"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Saisir une recette</button>
+    </div>
+    <input type="file" id="pdf-input" accept="application/pdf,.pdf" class="hidden">
     <div class="card" style="margin-bottom:12px">
       <b>Avec ce que j'ai</b>
       <div class="sub">Ajoute ce qu'il y a dans ton frigo : les recettes qui l'utilisent le plus remontent en tête (sel, huile et épices ne comptent pas).</div>
@@ -58,6 +62,11 @@
     <div class="card stack">
       <div class="row"><div class="grow"><b>Personnes dans le foyer</b><div class="sub">Quantités par défaut de chaque recette tirée</div></div>
         <div class="stepper"><button data-ppl="-1">−</button><span id="ppl">4</span><button data-ppl="1">+</button></div></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <b>Mes recettes ajoutées</b>
+      <div class="sub" id="my-count">Les recettes importées ou saisies sont enregistrées sur ce téléphone uniquement. Copie-les de temps en temps pour les sauvegarder, ou pour les envoyer à Claude afin qu'il les ajoute au site pour tout le monde.</div>
+      <button class="btn ghost small" id="export-mine" style="margin-top:10px">Copier mes recettes</button>
     </div>
     <p class="sub" style="margin-top:14px;text-align:center">Astuce : dans ton navigateur, « Ajouter à l'écran d'accueil » pour l'ouvrir comme une appli.</p>
   </section>
