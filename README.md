@@ -3,7 +3,7 @@
 Générateur de menus et de listes de courses pour le foyer, façon Jow.
 
 - **Menu** : tire au sort N recettes, ajuste le nombre de personnes, change ou retire une recette.
-- **Liste** : ingrédients additionnés, adaptés aux portions, triés par rayon ; « J'ai » pour ce qui est déjà au placard ; lien de recherche Leclerc Drive par article ; ajout d'articles libres.
+- **Liste** : ingrédients additionnés, adaptés aux portions, triés par rayon ; « J'ai » pour ce qui est déjà au placard ; ajout d'articles libres.
 - **Partage** : menu, liste et réglages synchronisés en direct via Firebase entre les adresses autorisées.
 
 En ligne : https://lemoa869121.github.io/courses/

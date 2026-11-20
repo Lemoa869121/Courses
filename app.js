@@ -7,7 +7,6 @@ import { firebaseConfig, allowedEmails } from "./firebase-config.js";
 
 /* ============ Constantes ============ */
 const AISLES = ["Fruits & légumes","Boucherie & poisson","Crèmerie & œufs","Boulangerie","Épicerie salée","Épicerie sucrée","Condiments & épices","Surgelés","Boissons","Hygiène & maison","Autres"];
-const DEFAULT_LECLERC = "https://www.leclercdrive.fr/recherche.aspx?TexteRecherche={q}";
 const KW = [
  ["Fruits & légumes","tomate carotte oignon échalote ail poireau courgette aubergine poivron salade laitue épinard chou brocoli champignon pomme poire banane citron orange fraise framboise avocat concombre radis patate navet céleri fenouil haricot persil coriandre basilic menthe ciboulette thym romarin gingembre potiron butternut courge mangue ananas kiwi raisin abricot pêche cerise betterave endive asperge artichaut"],
  ["Boucherie & poisson","poulet boeuf veau porc agneau dinde canard steak viande saucisse lardon jambon bacon chorizo merguez poisson saumon cabillaud thon crevette moule colin truite sardine escalope magret"],
@@ -53,7 +52,7 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor
 /* ============ État ============ */
 const state={
   recipes:[], recipesError:false,
-  settings:{people:4,leclercUrl:DEFAULT_LECLERC},
+  settings:{people:4},
   plan:{items:[],checked:{},have:{},extras:[]},
   user:null, offline:false
 };
@@ -194,10 +193,6 @@ function fmtQty(e){
   const s=String(q).replace(".",",");
   return (u?`${s} ${u}`:s)+(e.noQty?" + selon besoin":"");
 }
-function leclercLink(name){
-  const t=state.settings.leclercUrl||DEFAULT_LECLERC;const q=encodeURIComponent(name);
-  return t.includes("{q}")?t.replace("{q}",q):t+q;
-}
 const clonePlan=()=>JSON.parse(JSON.stringify(state.plan));
 
 /* ============ Rendu ============ */
@@ -329,7 +324,6 @@ function renderList(){
     for(const e of g)h+=`<div class="item ${checked[e.key]?"done":""}">
         <button class="chk" data-chk="${esc(e.key)}" aria-label="Cocher">${checked[e.key]?ICON_CHECK:""}</button>
         <div class="grow" data-chk="${esc(e.key)}" style="cursor:pointer"><div class="name">${esc(e.name)}</div><div class="qty">${esc(fmtQty(e))}</div></div>
-        <a class="lk" href="${esc(leclercLink(e.name))}" target="_blank" rel="noopener">Leclerc ↗</a>
         ${e.extra?`<button class="have" data-delx="${esc(e.extra)}">Suppr.</button>`:`<button class="have" data-have="${esc(e.key)}">J'ai</button>`}
       </div>`;
     h+=`</div></div>`;
@@ -372,14 +366,9 @@ $("#copy-list").onclick=async()=>{
 
 function renderSettings(){
   $("#ppl").textContent=state.settings.people;
-  const inp=$("#leclerc-url");if(document.activeElement!==inp)inp.value=state.settings.leclercUrl||DEFAULT_LECLERC;
-  $("#test-leclerc").href=leclercLink("tomates");
   $("#who").textContent=state.user?state.user.email:"";
 }
 $$("[data-ppl]").forEach(b=>b.onclick=()=>Store.setSettings({people:Math.max(1,Math.min(20,state.settings.people+(+b.dataset.ppl)))}));
-$("#save-leclerc").onclick=()=>{const v=$("#leclerc-url").value.trim()||DEFAULT_LECLERC;
-  if(!/^https:\/\//.test(v)){toast("Le lien doit commencer par https://");return}
-  Store.setSettings({leclercUrl:v});toast("Lien enregistré")};
 $("#logout").onclick=()=>signOut(auth);
 
 function renderAll(){
