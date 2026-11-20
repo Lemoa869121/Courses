@@ -1,0 +1,30 @@
+[
+  {
+    "id": "pain-d-epices",
+    "name": "Pain d'épices",
+    "servings": 8,
+    "category": "Dessert",
+    "prepTime": 70,
+    "ingredients": [
+      { "name": "farine", "qty": 200, "unit": "g", "aisle": "Épicerie sucrée" },
+      { "name": "miel", "qty": 200, "unit": "g", "aisle": "Épicerie sucrée" },
+      { "name": "sucre roux", "qty": 60, "unit": "g", "aisle": "Épicerie sucrée" },
+      { "name": "beurre doux", "qty": 25, "unit": "g", "aisle": "Crèmerie & œufs" },
+      { "name": "bicarbonate de soude alimentaire", "qty": 1, "unit": "c. à c.", "aisle": "Épicerie sucrée" },
+      { "name": "œuf", "qty": 1, "unit": "", "aisle": "Crèmerie & œufs" },
+      { "name": "lait", "qty": 100, "unit": "ml", "aisle": "Crèmerie & œufs" },
+      { "name": "épices à pain d'épices", "qty": 1, "unit": "c. à s.", "aisle": "Condiments & épices" },
+      { "name": "vanille en poudre", "qty": 1, "unit": "pincée", "aisle": "Épicerie sucrée" }
+    ],
+    "steps": [
+      "Dans une casserole, chauffer à feu moyen le lait avec le miel et le beurre, puis laisser refroidir.",
+      "Dans un saladier, mélanger la farine, le bicarbonate, le sucre et les épices.",
+      "Ajouter l'œuf et le mélange lait-miel-beurre refroidi, puis mélanger jusqu'à obtenir une pâte homogène.",
+      "Laisser reposer 4 h hors du réfrigérateur (pas nécessaire avec de la levure chimique).",
+      "Préchauffer le four à 150 °C et mélanger la pâte une dernière fois.",
+      "Verser dans un moule à cake beurré et fariné, couvrir de papier sulfurisé (ou d'un moule renversé).",
+      "Enfourner 50 minutes, laisser refroidir. Meilleur le lendemain."
+    ],
+    "notes": "Repos de 4 h à prévoir (temps total hors repos : environ 70 min).\nBicarbonate : peut être remplacé par 1 sachet de levure chimique.\nÉpices : ou 6 g d'un mélange 40 g anis, 20 g cannelle, 10 g muscade, 6 g gingembre."
+  }
+]

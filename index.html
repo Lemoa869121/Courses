@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF7F0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Courses">
+<title>Mes Courses</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <div id="banner"></div>
+
+  <!-- CONNEXION -->
+  <section class="view" id="v-login">
+    <div class="login" id="login-body"></div>
+  </section>
+
+  <!-- MENU -->
+  <section class="view" id="v-menu">
+    <header class="top">
+      <div><h1>Menu</h1><div class="sub" id="menu-sub"></div></div>
+    </header>
+    <div id="menu-body"></div>
+  </section>
+
+  <!-- RECETTES -->
+  <section class="view" id="v-recipes">
+    <header class="top">
+      <div><h1>Recettes</h1><div class="sub" id="rec-count"></div></div>
+    </header>
+    <div class="banner" style="background:var(--green-soft);color:var(--green)">Pour ajouter ou modifier une recette, envoie-la à Claude (texte, lien ou photo) : elle apparaîtra ici après la mise à jour du site.</div>
+    <input type="search" id="rec-search" placeholder="Rechercher une recette ou un ingrédient…">
+    <div class="chips" id="rec-cats"></div>
+    <div id="rec-list" class="stack" style="margin-top:4px"></div>
+  </section>
+
+  <!-- LISTE -->
+  <section class="view" id="v-list">
+    <header class="top">
+      <div><h1>Liste</h1><div class="sub" id="list-sub"></div></div>
+      <button class="btn ghost small" id="copy-list"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copier</button>
+    </header>
+    <div id="list-body"></div>
+  </section>
+
+  <!-- REGLAGES -->
+  <section class="view" id="v-settings">
+    <header class="top"><div><h1>Réglages</h1><div class="sub">Partagés par tout le foyer</div></div></header>
+    <div class="card stack">
+      <div class="row"><div class="grow"><b>Personnes dans le foyer</b><div class="sub">Quantités par défaut de chaque recette tirée</div></div>
+        <div class="stepper"><button data-ppl="-1">−</button><span id="ppl">4</span><button data-ppl="1">+</button></div></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <b>Leclerc Drive</b>
+      <div class="sub">Lien de recherche ouvert pour chaque article. Si tu tombes sur la page de choix du magasin, fais une recherche sur ton drive puis colle ici l'adresse de la page de résultats en remplaçant le mot cherché par <code>{q}</code>.</div>
+      <label class="f">Modèle de lien</label>
+      <input type="url" id="leclerc-url">
+      <div class="row" style="margin-top:10px;gap:8px">
+        <button class="btn small" id="save-leclerc">Enregistrer</button>
+        <a class="btn ghost small" id="test-leclerc" target="_blank" rel="noopener">Tester avec « tomates »</a>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="row"><div class="grow"><b>Compte</b><div class="sub" id="who"></div></div>
+      <button class="btn ghost small" id="logout">Se déconnecter</button></div>
+    </div>
+    <p class="sub" style="margin-top:14px;text-align:center">Astuce : dans ton navigateur, « Ajouter à l'écran d'accueil » pour l'ouvrir comme une appli.</p>
+  </section>
+</main>
+
+<nav class="tabs hidden" id="tabs">
+  <button data-tab="menu" class="active"><svg viewBox="0 0 24 24"><path d="M3 11h18M5 11a7 7 0 0 0 14 0"/><path d="M8 7c0-1.5 1-2 1-3.5M12 7c0-1.5 1-2 1-3.5M16 7c0-1.5 1-2 1-3.5"/></svg>Menu</button>
+  <button data-tab="recipes"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>Recettes</button>
+  <button data-tab="list"><svg viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>Liste<span class="badge hidden" id="list-badge"></span></button>
+  <button data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Réglages</button>
+</nav>
+
+<div class="sheet-bg" id="sheet-bg"></div>
+<div class="sheet" id="sheet"><div class="sheet-inner"><div class="grab"></div><div id="sheet-body"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
