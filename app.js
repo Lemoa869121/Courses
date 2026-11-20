@@ -1,4 +1,4 @@
-import { extractItems, parseRecipeItems } from "./pdfimport.js";
+import { extractItems, parseRecipeItems, parseRecipeText, itemsToText } from "./pdfimport.js";
 
 /* ============ Constantes ============ */
 const UNITS = ["","g","kg","ml","cl","l","pièce","c. à s.","c. à c.","pincée","gousse","tranche","botte","sachet","boîte","pot","paquet"];
@@ -350,7 +350,7 @@ function openEditor(r){
   if(!edit.ingredients||!edit.ingredients.length)edit.ingredients=[blankIng()];
   const isNew=!state.recipes.some(x=>x.id===edit.id);
   openSheet(`<div class="row"><h2 class="grow">${isNew?"Nouvelle recette":"Modifier la recette"}</h2><button class="icon-btn" id="ed-close">${ICON_X}</button></div>
-  ${edit._fromPdf?`<div class="banner" style="margin-top:10px">Vérifie ce que j'ai lu dans le PDF avant d'enregistrer, surtout les noms d'ingrédients et les rayons.</div>`:""}
+  ${edit._fromPdf?`<div class="banner" style="margin-top:10px">${edit._fromPhoto?"Lecture d'une photo : vérifie bien les quantités et les noms, des erreurs sont possibles (ex. 209 g au lieu de 200 g).":"Vérifie ce que j'ai lu dans le PDF avant d'enregistrer, surtout les noms d'ingrédients et les rayons."}</div>`:""}
   <label class="f">Nom</label><input type="text" id="ed-name" value="${esc(edit.name)}" placeholder="Ex. : Curry de pois chiches">
   <div class="row" style="gap:10px">
     <div class="grow"><label class="f">Pour combien de personnes ?</label><input type="number" id="ed-serv" min="1" value="${esc(edit.servings||"")}"></div>
@@ -406,26 +406,77 @@ function saveEditor(){
   mergeRecipes();renderAll();closeSheet();toast("Recette enregistrée");
 }
 
-let pdfjsLib=null;
-async function importPdf(file){
-  openSheet(`<h2>Lecture du PDF…</h2><div class="row" style="margin-top:14px"><div class="spinner" style="color:var(--accent)"></div><span class="sub">${esc(file.name)}</span></div>`);
+let pdfjsLib=null, tesseractP=null;
+async function getPdfjs(){
+  if(!pdfjsLib){pdfjsLib=await import("./lib/pdf.min.mjs");pdfjsLib.GlobalWorkerOptions.workerSrc=new URL("./lib/pdf.worker.min.mjs",location.href).href}
+  return pdfjsLib;
+}
+function getTesseract(){
+  if(window.Tesseract)return Promise.resolve(window.Tesseract);
+  if(!tesseractP)tesseractP=new Promise((res,rej)=>{
+    const s=document.createElement("script");
+    s.src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    s.onload=()=>res(window.Tesseract);s.onerror=()=>{tesseractP=null;rej(new Error("tesseract"))};
+    document.head.appendChild(s);
+  });
+  return tesseractP;
+}
+function setStatus(t){const el=$("#imp-status");if(el)el.textContent=t}
+async function shrinkImage(file,max=2200){
+  const url=URL.createObjectURL(file);
   try{
-    if(!pdfjsLib){pdfjsLib=await import("./lib/pdf.min.mjs");pdfjsLib.GlobalWorkerOptions.workerSrc=new URL("./lib/pdf.worker.min.mjs",location.href).href}
-    const data=new Uint8Array(await file.arrayBuffer());
-    const parsed=parseRecipeItems(await extractItems(pdfjsLib,data));
-    if(!parsed.name&&!parsed.ingredients.length)throw new Error("rien");
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+    const sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);return c;
+  }finally{URL.revokeObjectURL(url)}
+}
+async function ocr(canvas){
+  setStatus("Chargement de la lecture de texte (la première fois, ça peut prendre une minute)…");
+  const T=await getTesseract();
+  const {data}=await T.recognize(canvas,"fra",{logger:m=>{if(m.status==="recognizing text")setStatus(`Lecture du texte… ${Math.round(m.progress*100)} %`)}});
+  return data.text||"";
+}
+async function pdfToCanvas(pdfjs,data){
+  const doc=await pdfjs.getDocument({data,isEvalSupported:false}).promise;
+  const page=await doc.getPage(1);const vp=page.getViewport({scale:2});
+  const c=document.createElement("canvas");c.width=vp.width;c.height=vp.height;
+  await page.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;return c;
+}
+async function importFile(file){
+  const isPdf=file.type==="application/pdf"||/\.pdf$/i.test(file.name);
+  const isImg=/^image\//.test(file.type)||/\.(jpe?g|png|heic|heif|webp)$/i.test(file.name);
+  openSheet(`<h2>Lecture de la recette…</h2><div class="row" style="margin-top:14px;align-items:flex-start"><div class="spinner" style="color:var(--accent);flex:none"></div><span class="sub" id="imp-status">${esc(file.name||"")}</span></div>`);
+  let parsed=null,fromPhoto=false;
+  try{
+    if(isPdf){
+      setStatus("Lecture du PDF…");
+      const pdfjs=await getPdfjs();
+      const data=new Uint8Array(await file.arrayBuffer());
+      const pages=await extractItems(pdfjs,data.slice());
+      if(pages.flat().length){
+        parsed=parseRecipeItems(pages);
+        if(!parsed.ingredients.length){const alt=parseRecipeText(itemsToText(pages));if(alt.ingredients.length)parsed=alt}
+      }else{fromPhoto=true;parsed=parseRecipeText(await ocr(await pdfToCanvas(pdfjs,data)))}
+    }else if(isImg){
+      fromPhoto=true;setStatus("Préparation de la photo…");
+      parsed=parseRecipeText(await ocr(await shrinkImage(file)));
+    }else throw new Error("format");
+    if(!parsed||(!parsed.name&&!parsed.ingredients.length))throw new Error("rien");
     parsed.ingredients=parsed.ingredients.map(i=>({...i,aisle:guessAisle(i.name)}));
-    const r={id:"local-"+uid(),category:"",...parsed,_fromPdf:true};
     if(!parsed.ingredients.length)toast("Ingrédients non trouvés : ajoute-les à la main");
-    openEditor(r);
+    openEditor({id:"local-"+uid(),category:"",...parsed,_fromPdf:true,_fromPhoto:fromPhoto});
   }catch(e){
     console.error(e);
-    openSheet(`<h2>PDF illisible</h2><p class="sub">Je n'ai pas trouvé de texte de recette dans ce fichier (c'est souvent le cas d'un scan ou d'une photo). Tu peux saisir la recette à la main, ou l'envoyer à Claude.</p><button class="btn block" id="pdf-manual" style="margin-top:12px">Saisir à la main</button>`);
+    const msg=e&&e.message==="tesseract"?"Je n'ai pas pu charger la lecture de photos : vérifie ta connexion internet et réessaie."
+      :e&&e.message==="format"?"Ce type de fichier n'est pas pris en charge : choisis une photo ou un PDF."
+      :e&&e.name==="EncodingError"||/heic/i.test(file.name||"")?"Je n'arrive pas à ouvrir cette photo. Réessaie en prenant la photo directement depuis le bouton."
+      :"Je n'ai pas trouvé de recette lisible dans ce fichier.";
+    openSheet(`<h2>Import impossible</h2><p class="sub">${msg} Tu peux aussi saisir la recette à la main.</p><button class="btn block" id="pdf-manual" style="margin-top:12px">Saisir à la main</button>`);
     $("#pdf-manual").onclick=()=>openEditor();
   }
 }
-$("#add-pdf").onclick=()=>{$("#pdf-input").value="";$("#pdf-input").click()};
-$("#pdf-input").onchange=e=>{const f=e.target.files&&e.target.files[0];if(f)importPdf(f)};
+$("#pdf-input").onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(f)importFile(f)};
 $("#add-form").onclick=()=>openEditor();
 $("#export-mine").onclick=async()=>{
   const mine=Local.get("myrecipes",[]);

@@ -149,3 +149,53 @@ export function parseRecipeItems(pages) {
 }
 
 function norm(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim(); }
+
+// Lecture d'une recette depuis du texte brut (photo passée à l'OCR, ou PDF sans structure).
+const QTY_START = /^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?|[½¼¾⅓⅔]|une?\s|quelques\s)/i;
+export function parseRecipeText(text) {
+  const recipe = { name: "", servings: null, prepTime: null, ingredients: [], steps: [], notes: "" };
+  const lines = String(text || "").split(/\r?\n/).map(clean)
+    .filter(l => (l.match(/[a-zàâçéèêëîïôûùüÿœ0-9]/gi) || []).length >= 2 && !/^[=\-_*~.]{3,}$/.test(l));
+  let section = "head";
+  const notes = [];
+  for (const line of lines) {
+    const sv = line.match(/pour\s+(\d+)\s+(personnes?|parts?|portions?)/i);
+    if (sv && !recipe.servings) recipe.servings = +sv[1];
+    const t = line.match(/(?:pr[ée]paration|cuisson|temps)\s*:?\s*(\d+)\s*min/i);
+    if (t) recipe.prepTime = (recipe.prepTime || 0) + +t[1];
+    if (SECTION.ingredients.test(line)) { section = "ingredients"; continue; }
+    if (SECTION.notes.test(line)) { section = "notes"; continue; }
+    const stepHead = line.match(/^[ée]tape\s*(\d+)?\s*[:.)-]?\s*(.*)$/i);
+    if (SECTION.steps.test(line) || stepHead) {
+      section = "steps";
+      if (stepHead) recipe.steps.push(stepHead[2] || "");
+      continue;
+    }
+    if (section === "head" || section === "ingredients") {
+      if (!recipe.name && section === "head" && !QTY_START.test(line) && line.length < 80) { recipe.name = line; continue; }
+      if (/^\(/.test(line) || (notes.length && /^\(/.test(notes[notes.length - 1]) && !/\)/.test(notes[notes.length - 1]))) { notes.push(line); continue; }
+      if (QTY_START.test(line) || line.length < 50) {
+        const ing = parseIngredient(line.replace(/\s*\(.*$/, ""));
+        if (ing && ing.name) recipe.ingredients.push(ing);
+        const par = line.match(/\((.*)\)?$/); if (par) notes.push(par[0]);
+        continue;
+      }
+      section = "steps";
+    }
+    if (section === "steps") {
+      const m = line.match(/^(\d+)\s*[.)-]\s+(.*)$/);
+      if (m) recipe.steps.push(m[2]);
+      else if (recipe.steps.length) recipe.steps[recipe.steps.length - 1] = (recipe.steps[recipe.steps.length - 1] + " " + line).trim();
+      else recipe.steps.push(line);
+    } else if (section === "notes") notes.push(line);
+  }
+  recipe.steps = recipe.steps.map(clean).filter(Boolean);
+  recipe.notes = notes.join("\n");
+  if (!recipe.servings) recipe.servings = 4;
+  return recipe;
+}
+
+// Texte brut d'un PDF, ligne par ligne (pour parseRecipeText).
+export function itemsToText(pages) {
+  return pages.map(items => toLines(items).map(l => l.items.map(i => i.str).join(" ")).join("\n")).join("\n");
+}

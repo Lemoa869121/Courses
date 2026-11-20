@@ -98,3 +98,8 @@ nav.tabs .badge{position:absolute;top:2px;left:calc(50% + 6px);background:var(--
 .login{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:20px}
 .login h1{font-size:34px}
 .notes{background:var(--accent-soft);border-radius:12px;padding:10px 12px;font-size:14px;margin-top:12px;white-space:pre-line}
+
+.visually-hidden{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+label.btn{cursor:pointer;user-select:none}
+.ing{grid-template-columns:1fr 72px 82px 28px}
+.ing .ing-qty,.ing .ing-unit{padding:10px 6px}
