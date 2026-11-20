@@ -1,3 +1,4 @@
+import { readRecipes, updateRecipes, checkToken, REPO } from "./github.js";
 import { extractItems, parseRecipeItems, parseRecipeText, itemsToText, cleanPastedText } from "./pdfimport.js";
 
 /* ============ Constantes ============ */
@@ -57,17 +58,29 @@ const state={
 let repoRecipes=[];
 function mergeRecipes(){
   const mine=Local.get("myrecipes",[]).filter(r=>r&&r.id&&r.name).map(r=>({...r,local:true}));
-  state.recipes=[...repoRecipes,...mine];
+  state.recipes=[...repoRecipes,...mine.filter(m=>!repoRecipes.some(r=>r.id===m.id))];
 }
+const ghToken=()=>Local.get("ghtoken","")||"";
 async function loadRecipes(){
-  try{
-    const res=await fetch("recipes.json?v="+Date.now(),{cache:"no-store"});
-    if(!res.ok)throw new Error(res.status);
-    const data=await res.json();
-    repoRecipes=(Array.isArray(data)?data:[]).filter(r=>r&&r.id&&r.name);
-  }catch(e){state.recipesError=true}
+  state.recipesError=false;state.ghError="";
+  const token=ghToken();
+  let done=false;
+  if(token){
+    try{repoRecipes=(await readRecipes(token)).recipes.filter(r=>r&&r.id&&r.name);done=true}
+    catch(e){state.ghError=e.message||"Erreur GitHub"}
+  }
+  if(!done){
+    try{
+      const res=await fetch("recipes.json?v="+Date.now(),{cache:"no-store"});
+      if(!res.ok)throw new Error(res.status);
+      const data=await res.json();
+      repoRecipes=(Array.isArray(data)?data:[]).filter(r=>r&&r.id&&r.name);
+    }catch(e){state.recipesError=true}
+  }
   mergeRecipes();renderAll();
 }
+let lastLoad=Date.now();
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-lastLoad>20000){lastLoad=Date.now();loadRecipes()}});
 
 /* ============ Stockage sur l'appareil ============ */
 const Local={
@@ -88,6 +101,7 @@ function setTab(t){
   tab=t;$$(".view").forEach(v=>v.classList.toggle("active",v.id==="v-"+t));
   $$("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
   window.scrollTo(0,0);
+  if(typeof renderBanner==="function"&&state.recipes)renderBanner();
 }
 window.setTab=setTab;
 $$("nav.tabs button").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
@@ -134,6 +148,8 @@ const clonePlan=()=>JSON.parse(JSON.stringify(state.plan));
 function renderBanner(){
   let h="";
   if(state.recipesError)h+=`<div class="banner">Impossible de charger les recettes.</div>`;
+  const nLocal=state.recipes.filter(r=>r.local).length;
+  if(nLocal&&!ghToken()&&(tab==="recipes"||tab==="menu"))h+=`<div class="banner">${nLocal} recette${nLocal>1?"s sont":" est"} seulement sur ce téléphone. Pour ${nLocal>1?"les":"la"} partager avec le foyer : <a href="#" onclick="setTab('settings');return false" style="color:inherit;font-weight:700">Réglages → GitHub</a>.</div>`;
   $("#banner").innerHTML=h;
 }
 
@@ -233,7 +249,7 @@ function renderRecipes(){
   if(!n){$("#rec-list").innerHTML=`<div class="empty"><h3>Ton carnet est vide</h3></div>`;return}
   if(!list.length){$("#rec-list").innerHTML=`<div class="empty">Aucun résultat</div>`;return}
   const inPlan=new Set(state.plan.items.map(i=>i.rid));
-  $("#rec-list").innerHTML=list.map(r=>`<div class="card rec" data-open="${esc(r.id)}"><div class="grow"><h3>${esc(r.name)}</h3><div class="meta">${r.category?`<span class="tag">${esc(r.category)}</span> · `:""}${r.servings||"?"} pers. · ${(r.ingredients||[]).length} ingrédients${inPlan.has(r.id)?" · <b style='color:var(--accent)'>au menu</b>":""}${r.local?" · sur ce téléphone":""}</div></div><svg viewBox="0 0 24 24" style="color:var(--muted)"><path d="m9 18 6-6-6-6"/></svg></div>`).join("");
+  $("#rec-list").innerHTML=list.map(r=>`<div class="card rec" data-open="${esc(r.id)}"><div class="grow"><h3>${esc(r.name)}</h3><div class="meta">${r.category?`<span class="tag">${esc(r.category)}</span> · `:""}${r.servings||"?"} pers. · ${(r.ingredients||[]).length} ingrédients${inPlan.has(r.id)?" · <b style='color:var(--accent)'>au menu</b>":""}${r.local?" · <b style='color:var(--accent)'>sur ce téléphone seulement</b>":""}</div></div><svg viewBox="0 0 24 24" style="color:var(--muted)"><path d="m9 18 6-6-6-6"/></svg></div>`).join("");
   $$("[data-open]").forEach(c=>c.onclick=()=>openRecipe(c.dataset.open));
 }
 $("#rec-search").oninput=e=>{recFilter=e.target.value;renderRecipes()};
@@ -303,6 +319,7 @@ function renderSettings(){
 $$("[data-ppl]").forEach(b=>b.onclick=()=>Store.setSettings({people:Math.max(1,Math.min(20,state.settings.people+(+b.dataset.ppl)))}));
 
 function renderAll(){
+  renderGitHub();
   renderBanner();renderMenu();renderRecipes();renderList();renderSettings();
 }
 
@@ -321,13 +338,19 @@ function openRecipe(id){
   ${(r.steps||[]).length?`<h3 style="margin-top:16px">Préparation</h3><div class="steps-view"><ol>${r.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div>`:""}
   ${r.notes?`<div class="notes">${esc(r.notes)}</div>`:""}
   <button class="btn block" id="sh-plan" style="margin-top:18px" ${inPlan?"disabled":""}>${inPlan?"Déjà au menu":"Ajouter au menu"}</button>
-  ${r.local?`<div class="row" style="margin-top:8px;gap:8px"><button class="btn ghost grow" id="sh-edit">Modifier</button><button class="btn ghost grow" id="sh-del" style="color:var(--accent)">Supprimer</button></div>`:`<p class="sub" style="text-align:center;margin-top:10px">Recette du site : pour la modifier, demande à Claude.</p>`}`);
+  ${r.local||ghToken()?`${r.local?`<p class="sub" style="text-align:center;margin-top:10px">Sur ce téléphone seulement${ghToken()?" : touche Modifier puis Enregistrer pour l'envoyer au foyer":" : ajoute ta clé GitHub dans Réglages pour la partager"}.</p>`:""}<div class="row" style="margin-top:8px;gap:8px"><button class="btn ghost grow" id="sh-edit">Modifier</button><button class="btn ghost grow" id="sh-del" style="color:var(--accent)">Supprimer</button></div>`:`<p class="sub" style="text-align:center;margin-top:10px">Pour modifier les recettes du foyer, ajoute ta clé GitHub dans Réglages.</p>`}`);
   $("#sh-close").onclick=closeSheet;
-  if(r.local){
+  if($("#sh-edit")){
     $("#sh-edit").onclick=()=>openEditor(JSON.parse(JSON.stringify(r)));
     let armed=false;
-    $("#sh-del").onclick=()=>{
-      if(!armed){armed=true;$("#sh-del").textContent="Confirmer";return}
+    $("#sh-del").onclick=async()=>{
+      if(!armed){armed=true;$("#sh-del").textContent="Confirmer la suppression";return}
+      const btn=$("#sh-del");
+      if(!r.local){
+        btn.disabled=true;btn.textContent="Suppression…";
+        try{repoRecipes=await updateRecipes(ghToken(),list=>list.filter(x=>x.id!==id),`Suppression de la recette « ${r.name} »`)}
+        catch(e){btn.disabled=false;btn.textContent="Supprimer";toast(e.message||"Erreur GitHub");return}
+      }
       Local.put("myrecipes",Local.get("myrecipes",[]).filter(x=>x.id!==id));mergeRecipes();
       const p=clonePlan();p.items=p.items.filter(i=>i.rid!==id);Store.setPlan(p);closeSheet();toast("Recette supprimée");
     };
@@ -391,7 +414,7 @@ function syncIngs(){
     name:b.querySelector(".ing-name").value.trim(),qty:q===""?null:Number(q),unit:b.querySelector(".ing-unit").value,
     aisle:b.querySelector(".aisle-sel").value,aisleManual:edit.ingredients[k]&&edit.ingredients[k].aisleManual}});
 }
-function saveEditor(){
+async function saveEditor(){
   syncIngs();
   const name=$("#ed-name").value.trim();
   if(!name){toast("Donne un nom à la recette");$("#ed-name").focus();return}
@@ -400,10 +423,28 @@ function saveEditor(){
   const r={id:edit.id,name,servings:Math.max(1,parseInt($("#ed-serv").value)||state.settings.people),
     category:edit.category||"",prepTime:parseInt($("#ed-time").value)||null,ingredients:ings,
     steps:$("#ed-steps").value.split("\n").map(s=>s.trim()).filter(Boolean),notes:$("#ed-notes").value.trim()};
+  const token=ghToken();
+  if(token){
+    const btn=$("#ed-save");btn.disabled=true;btn.innerHTML='<div class="spinner"></div> Enregistrement sur GitHub…';
+    try{
+      const isNew=!repoRecipes.some(x=>x.id===r.id);
+      repoRecipes=await updateRecipes(token,list=>{const i=list.findIndex(x=>x.id===r.id);if(i>=0)list[i]=r;else list.push(r);return list},
+        `${isNew?"Ajout":"Modification"} de la recette « ${r.name} »`);
+      Local.put("myrecipes",Local.get("myrecipes",[]).filter(x=>x.id!==r.id));
+      mergeRecipes();renderAll();closeSheet();toast("Recette enregistrée pour tout le foyer");
+    }catch(e){
+      btn.disabled=false;btn.textContent="Réessayer";
+      saveLocal(r);
+      toast((e.message||"Erreur GitHub")+" : gardée sur ce téléphone pour l'instant");
+    }
+    return;
+  }
+  saveLocal(r);closeSheet();toast("Recette enregistrée sur ce téléphone");
+}
+function saveLocal(r){
   const mine=Local.get("myrecipes",[]);const i=mine.findIndex(x=>x.id===r.id);
   if(i>=0)mine[i]=r;else mine.push(r);
-  if(!Local.put("myrecipes",mine))return;
-  mergeRecipes();renderAll();closeSheet();toast("Recette enregistrée");
+  Local.put("myrecipes",mine);mergeRecipes();renderAll();
 }
 
 let pdfjsLib=null, tesseractP=null;
@@ -498,6 +539,40 @@ $("#add-text").onclick=()=>{
     openEditor({id:"local-"+uid(),category:"",...parsed,_fromPdf:true,_fromText:true});
   };
 };
+function renderGitHub(){
+  const token=ghToken(),mine=Local.get("myrecipes",[]);
+  const el=$("#gh-body");if(!el)return;
+  if(token){
+    el.innerHTML=`<div class="sub">${state.ghError?`<b style="color:var(--accent)">${esc(state.ghError)}</b>`:`<b style="color:var(--green)">Connecté</b> : les recettes ajoutées ou modifiées sont enregistrées dans le dépôt ${esc(REPO)} et visibles par tout le foyer.`}</div>
+      ${mine.length?`<button class="btn block" id="gh-upload" style="margin-top:10px">Envoyer ${mine.length} recette${mine.length>1?"s":""} du téléphone sur GitHub</button>`:""}
+      <button class="btn ghost small" id="gh-remove" style="margin-top:10px">Retirer la clé de ce téléphone</button>`;
+    $("#gh-remove").onclick=()=>{Local.put("ghtoken","");loadRecipes();toast("Clé retirée")};
+    const up=$("#gh-upload");if(up)up.onclick=uploadLocal;
+  }else{
+    el.innerHTML=`<div class="sub">Sans clé, les recettes que tu ajoutes restent sur ce téléphone. Colle ici ta clé GitHub (elle commence par <code>github_pat_</code>) pour les partager avec le foyer.</div>
+      <input type="password" id="gh-token" placeholder="github_pat_…" autocomplete="off" style="margin-top:10px">
+      <button class="btn small" id="gh-save" style="margin-top:10px">Connecter</button>`;
+    $("#gh-save").onclick=async()=>{
+      const t=$("#gh-token").value.trim();
+      if(!/^(github_pat_|ghp_)/.test(t)){toast("Ce n'est pas une clé GitHub (github_pat_…)");return}
+      const b=$("#gh-save");b.disabled=true;b.textContent="Vérification…";
+      try{await checkToken(t)}catch(e){b.disabled=false;b.textContent="Connecter";toast(e.message||"Clé refusée");return}
+      Local.put("ghtoken",t);toast("Clé GitHub enregistrée");
+      await loadRecipes();
+      if(Local.get("myrecipes",[]).length)uploadLocal();
+    };
+  }
+}
+async function uploadLocal(){
+  const mine=Local.get("myrecipes",[]);if(!mine.length)return;
+  const b=$("#gh-upload");if(b){b.disabled=true;b.innerHTML='<div class="spinner"></div> Envoi…'}
+  try{
+    repoRecipes=await updateRecipes(ghToken(),list=>{for(const r of mine){const {local,...clean}=r;const i=list.findIndex(x=>x.id===r.id);if(i>=0)list[i]=clean;else list.push(clean)}return list},
+      `Ajout de ${mine.length} recette${mine.length>1?"s":""} depuis le téléphone`);
+    Local.put("myrecipes",[]);mergeRecipes();renderAll();
+    toast(`${mine.length} recette${mine.length>1?"s":""} envoyée${mine.length>1?"s":""} au foyer`);
+  }catch(e){toast(e.message||"Erreur GitHub");renderAll()}
+}
 $("#export-mine").onclick=async()=>{
   const mine=Local.get("myrecipes",[]);
   if(!mine.length){toast("Aucune recette ajoutée sur ce téléphone");return}

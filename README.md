@@ -14,6 +14,7 @@ En ligne : https://lemoa869121.github.io/Courses/
 | Fichier | Rôle |
 |---|---|
 | `recipes.json` | Le carnet de recettes commun (mis à jour par Claude) |
+| `github.js` | Enregistrement des recettes dans le dépôt (API GitHub) |
 | `pdfimport.js` | Lecture des recettes depuis un PDF |
 | `lib/` | pdf.js (Mozilla, licence Apache 2.0) |
 | `index.html`, `app.js`, `style.css` | L'appli |
@@ -37,5 +38,8 @@ Unités : `g kg ml cl l pièce "c. à s." "c. à c." pincée gousse tranche bott
 `qty: null` = « selon besoin ».
 
 ## Données
+
+Les recettes ajoutées depuis l'appli sont enregistrées dans `recipes.json` via l'API GitHub, avec une clé d'accès personnelle (fine-grained token, droit *Contents : Read and write* sur ce seul dépôt) collée dans *Réglages* sur chaque téléphone. La clé reste dans le navigateur, jamais dans le dépôt. Sans clé, les recettes ajoutées restent sur le téléphone.
+
 
 Le menu, la liste et les réglages sont enregistrés dans le navigateur de chaque appareil (pas de compte, pas de serveur). Ils ne sont pas partagés entre téléphones.
