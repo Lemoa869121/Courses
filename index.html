@@ -37,6 +37,12 @@
       <div><h1>Recettes</h1><div class="sub" id="rec-count"></div></div>
     </header>
     <div class="banner" style="background:var(--green-soft);color:var(--green)">Pour ajouter ou modifier une recette, envoie-la à Claude (texte, lien ou photo) : elle apparaîtra ici après la mise à jour du site.</div>
+    <div class="card" style="margin-bottom:12px">
+      <b>Avec ce que j'ai</b>
+      <div class="sub">Ajoute ce qu'il y a dans ton frigo : les recettes qui l'utilisent le plus remontent en tête (sel, huile et épices ne comptent pas).</div>
+      <form class="row" id="fridge-form" style="margin-top:10px"><input type="text" id="fridge-in" class="grow" placeholder="Ex. : courgette, riz, poulet"><button class="btn small">Ajouter</button></form>
+      <div class="chips" id="fridge-chips" style="margin-bottom:0"></div>
+    </div>
     <input type="search" id="rec-search" placeholder="Rechercher une recette ou un ingrédient…">
     <div class="chips" id="rec-cats"></div>
     <div id="rec-list" class="stack" style="margin-top:4px"></div>

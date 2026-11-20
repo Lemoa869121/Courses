@@ -258,10 +258,45 @@ function doDraw(){
   toast("Menu tiré au sort !");
 }
 
+/* ---- Recherche par ingrédients (frigo, mémorisé sur l'appareil) ---- */
+let fridge=[];
+try{fridge=JSON.parse(localStorage.getItem("courses:fridge")||"[]")}catch(e){fridge=[]}
+const saveFridge=()=>{try{localStorage.setItem("courses:fridge",JSON.stringify(fridge))}catch(e){}};
+const words=s=>norm(s).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>1&&!["de","du","la","le","les","des","en","au","aux","a"].includes(w)).map(w=>w.length>3&&/[sx]$/.test(w)?w.slice(0,-1):w);
+function ingMatches(ingName,item){
+  const a=words(ingName),b=words(item);
+  return b.length>0&&b.every(w=>a.some(x=>x===w||(w.length>=4&&x.startsWith(w))));
+}
+function fridgeScore(r){
+  const needed=(r.ingredients||[]).filter(i=>i.name&&i.aisle!=="Condiments & épices");
+  const have=needed.filter(i=>fridge.some(f=>ingMatches(i.name,f)));
+  return {have,needed,missing:needed.filter(i=>!have.includes(i))};
+}
+$("#fridge-form").onsubmit=e=>{
+  e.preventDefault();
+  const items=$("#fridge-in").value.split(/[,;]/).map(s=>s.trim()).filter(Boolean);
+  for(const it of items)if(!fridge.some(f=>norm(f)===norm(it)))fridge.push(it);
+  $("#fridge-in").value="";saveFridge();renderRecipes();
+};
+
 let recFilter="",recCat="";
 function renderRecipes(){
   const n=state.recipes.length;
   $("#rec-count").textContent=n?`${n} recette${n>1?"s":""}`:"";
+  $("#fridge-chips").innerHTML=fridge.map((f,i)=>`<button class="chip on" data-fr="${i}">${esc(f)} ✕</button>`).join("")+(fridge.length>1?`<button class="chip" id="fr-clear">Tout effacer</button>`:"");
+  $$("[data-fr]").forEach(b=>b.onclick=()=>{fridge.splice(+b.dataset.fr,1);saveFridge();renderRecipes()});
+  const fc=$("#fr-clear");if(fc)fc.onclick=()=>{fridge=[];saveFridge();renderRecipes()};
+  if(fridge.length){
+    const ranked=state.recipes.map(r=>({r,s:fridgeScore(r)})).filter(x=>x.s.have.length)
+      .sort((a,b)=>(b.s.have.length/b.s.needed.length)-(a.s.have.length/a.s.needed.length)||b.s.have.length-a.s.have.length);
+    $("#rec-list").innerHTML=ranked.length?ranked.map(({r,s})=>`<div class="card rec" data-open="${esc(r.id)}"><div class="grow"><h3>${esc(r.name)}</h3>
+      <div class="meta"><b style="color:var(--green)">${s.have.length}/${s.needed.length} ingrédients</b>${s.missing.length?` · manque : ${esc(s.missing.slice(0,5).map(i=>i.name).join(", "))}${s.missing.length>5?"…":""}`:" · tu as tout !"}</div></div>
+      <svg viewBox="0 0 24 24" style="color:var(--muted)"><path d="m9 18 6-6-6-6"/></svg></div>`).join("")
+      :`<div class="empty">Aucune recette n'utilise ces ingrédients</div>`;
+    $$("[data-open]").forEach(c=>c.onclick=()=>openRecipe(c.dataset.open));
+    $("#rec-cats").innerHTML="";
+    return;
+  }
   const cats=[...new Set(state.recipes.map(r=>r.category).filter(Boolean))].sort();
   $("#rec-cats").innerHTML=cats.length>1?cats.map(c=>`<button class="chip ${recCat===c?"on":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join(""):"";
   $$("[data-cat]").forEach(b=>b.onclick=()=>{recCat=recCat===b.dataset.cat?"":b.dataset.cat;renderRecipes()});

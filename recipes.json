@@ -6,15 +6,60 @@
     "category": "Dessert",
     "prepTime": 70,
     "ingredients": [
-      { "name": "farine", "qty": 200, "unit": "g", "aisle": "Épicerie sucrée" },
-      { "name": "miel", "qty": 200, "unit": "g", "aisle": "Épicerie sucrée" },
-      { "name": "sucre roux", "qty": 60, "unit": "g", "aisle": "Épicerie sucrée" },
-      { "name": "beurre doux", "qty": 25, "unit": "g", "aisle": "Crèmerie & œufs" },
-      { "name": "bicarbonate de soude alimentaire", "qty": 1, "unit": "c. à c.", "aisle": "Épicerie sucrée" },
-      { "name": "œuf", "qty": 1, "unit": "", "aisle": "Crèmerie & œufs" },
-      { "name": "lait", "qty": 100, "unit": "ml", "aisle": "Crèmerie & œufs" },
-      { "name": "épices à pain d'épices", "qty": 1, "unit": "c. à s.", "aisle": "Condiments & épices" },
-      { "name": "vanille en poudre", "qty": 1, "unit": "pincée", "aisle": "Épicerie sucrée" }
+      {
+        "name": "farine",
+        "qty": 200,
+        "unit": "g",
+        "aisle": "Épicerie sucrée"
+      },
+      {
+        "name": "miel",
+        "qty": 200,
+        "unit": "g",
+        "aisle": "Épicerie sucrée"
+      },
+      {
+        "name": "sucre roux",
+        "qty": 60,
+        "unit": "g",
+        "aisle": "Épicerie sucrée"
+      },
+      {
+        "name": "beurre doux",
+        "qty": 25,
+        "unit": "g",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "bicarbonate de soude alimentaire",
+        "qty": 1,
+        "unit": "c. à c.",
+        "aisle": "Épicerie sucrée"
+      },
+      {
+        "name": "œuf",
+        "qty": 1,
+        "unit": "",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "lait",
+        "qty": 100,
+        "unit": "ml",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "épices à pain d'épices",
+        "qty": 1,
+        "unit": "c. à s.",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "vanille en poudre",
+        "qty": 1,
+        "unit": "pincée",
+        "aisle": "Épicerie sucrée"
+      }
     ],
     "steps": [
       "Dans une casserole, chauffer à feu moyen le lait avec le miel et le beurre, puis laisser refroidir.",
@@ -26,5 +71,128 @@
       "Enfourner 50 minutes, laisser refroidir. Meilleur le lendemain."
     ],
     "notes": "Repos de 4 h à prévoir (temps total hors repos : environ 70 min).\nBicarbonate : peut être remplacé par 1 sachet de levure chimique.\nÉpices : ou 6 g d'un mélange 40 g anis, 20 g cannelle, 10 g muscade, 6 g gingembre."
+  },
+  {
+    "id": "patate-douce-gratinee-boeuf",
+    "name": "Patate douce gratinée au bœuf",
+    "servings": 1,
+    "category": "Viande",
+    "prepTime": 60,
+    "ingredients": [
+      {
+        "name": "patate douce",
+        "qty": 360,
+        "unit": "g",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "oignon",
+        "qty": 65,
+        "unit": "g",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "poivron",
+        "qty": 80,
+        "unit": "g",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "champignons",
+        "qty": 50,
+        "unit": "g",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "tomate",
+        "qty": 40,
+        "unit": "g",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "épinards",
+        "qty": 80,
+        "unit": "g",
+        "aisle": "Fruits & légumes"
+      },
+      {
+        "name": "bœuf haché",
+        "qty": 100,
+        "unit": "g",
+        "aisle": "Boucherie & poisson"
+      },
+      {
+        "name": "fromage frais",
+        "qty": 25,
+        "unit": "g",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "skyr",
+        "qty": 100,
+        "unit": "g",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "mozzarella",
+        "qty": 10,
+        "unit": "g",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "parmesan",
+        "qty": 5,
+        "unit": "g",
+        "aisle": "Crèmerie & œufs"
+      },
+      {
+        "name": "huile d'olive",
+        "qty": null,
+        "unit": "",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "ail en poudre",
+        "qty": null,
+        "unit": "",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "cumin",
+        "qty": null,
+        "unit": "",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "paprika",
+        "qty": null,
+        "unit": "",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "sel",
+        "qty": null,
+        "unit": "",
+        "aisle": "Condiments & épices"
+      },
+      {
+        "name": "poivre",
+        "qty": null,
+        "unit": "",
+        "aisle": "Condiments & épices"
+      }
+    ],
+    "steps": [
+      "Préchauffer le four à 200 °C.",
+      "Couper la patate douce en deux, la placer dans un plat en verre et vaporiser d'huile d'olive.",
+      "Cuire la patate douce au four 30 minutes.",
+      "Faire revenir l'oignon, le poivron, les champignons et la tomate à la poêle.",
+      "Ajouter le bœuf haché, assaisonner (sel, poivre, ail en poudre, cumin, paprika) et cuire jusqu'à ce qu'il soit bien cuit.",
+      "Ajouter les épinards et laisser réduire.",
+      "Incorporer le fromage frais et le skyr.",
+      "Garnir la patate douce de la préparation, parsemer de mozzarella et de parmesan.",
+      "Remettre 5 minutes au four pour gratiner."
+    ],
+    "notes": "Préparation 20 min, cuisson 40 min, niveau moyen.\nImportée de WeChef (série « Kiff ou Skip »)."
   }
 ]
