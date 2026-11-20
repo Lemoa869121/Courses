@@ -4,17 +4,15 @@ Générateur de menus et de listes de courses pour le foyer, façon Jow.
 
 - **Menu** : tire au sort N recettes, ajuste le nombre de personnes, change ou retire une recette.
 - **Liste** : ingrédients additionnés, adaptés aux portions, triés par rayon ; « J'ai » pour ce qui est déjà au placard ; ajout d'articles libres.
-- **Partage** : menu, liste et réglages synchronisés en direct via Firebase entre les adresses autorisées.
+- **Recherche par ingrédients** : les recettes qui utilisent le plus ce que tu as remontent en tête.
 
-En ligne : https://lemoa869121.github.io/courses/
+En ligne : https://lemoa869121.github.io/Courses/
 
 ## Fichiers
 
 | Fichier | Rôle |
 |---|---|
 | `recipes.json` | Le carnet de recettes (mis à jour par Claude) |
-| `firebase-config.js` | Configuration Firebase + adresses autorisées |
-| `firestore.rules` | Règles de sécurité à coller dans la console Firebase |
 | `index.html`, `app.js`, `style.css` | L'appli |
 
 ## Format d'une recette
@@ -35,11 +33,6 @@ En ligne : https://lemoa869121.github.io/courses/
 Unités : `g kg ml cl l pièce "c. à s." "c. à c." pincée gousse tranche botte sachet boîte pot paquet` ou `""` pour un nombre.
 `qty: null` = « selon besoin ».
 
-## Mise en route Firebase
+## Données
 
-1. Console Firebase → projet → **Firestore Database** (région europe-west, mode production).
-2. **Authentication → Sign-in method** : activer Google. **Settings → Authorized domains** : ajouter `lemoa869121.github.io`.
-3. Copier le `firebaseConfig` de l'appli Web dans `firebase-config.js`.
-4. **Firestore → Règles** : coller le contenu de `firestore.rules`, publier.
-
-Ajouter une personne au foyer : son adresse Gmail dans `firebase-config.js` **et** dans `firestore.rules` (puis republier les règles).
+Le menu, la liste et les réglages sont enregistrés dans le navigateur de chaque appareil (pas de compte, pas de serveur). Ils ne sont pas partagés entre téléphones.

@@ -1,10 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, doc, onSnapshot, setDoc, updateDoc, FieldPath }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, allowedEmails } from "./firebase-config.js";
-
 /* ============ Constantes ============ */
 const AISLES = ["Fruits & légumes","Boucherie & poisson","Crèmerie & œufs","Boulangerie","Épicerie salée","Épicerie sucrée","Condiments & épices","Surgelés","Boissons","Hygiène & maison","Autres"];
 const KW = [
@@ -54,7 +47,6 @@ const state={
   recipes:[], recipesError:false,
   settings:{people:4},
   plan:{items:[],checked:{},have:{},extras:[]},
-  user:null, offline:false
 };
 
 /* ============ Recettes (fichier du dépôt) ============ */
@@ -68,75 +60,21 @@ async function loadRecipes(){
   renderAll();
 }
 
-/* ============ Firebase ============ */
-const configured=!Object.values(firebaseConfig).some(v=>!v||v==="A_REMPLIR");
-let auth=null, fs=null, planRef=null, settingsRef=null, unsubs=[];
-
-function handleWriteErr(e){
-  console.error(e);
-  if(e&&e.code==="permission-denied")toast("Accès refusé : cette adresse n'est pas autorisée");
-  else toast("Enregistrement impossible, vérifie ta connexion");
-}
-const Store={
-  setSettings(s){
-    state.settings={...state.settings,...s};renderAll();
-    return setDoc(settingsRef,state.settings,{merge:true}).catch(handleWriteErr);
-  },
-  setPlan(p){
-    state.plan=p;renderAll();
-    return setDoc(planRef,JSON.parse(JSON.stringify(p))).catch(handleWriteErr);
-  },
-  async patchPlanMap(field,key,val){
-    state.plan={...state.plan,[field]:{...(state.plan[field]||{}),[key]:val}};renderAll();
-    try{await updateDoc(planRef,new FieldPath(field,key),val)}
-    catch(e){
-      if(e&&e.code==="not-found")return setDoc(planRef,JSON.parse(JSON.stringify(state.plan))).catch(handleWriteErr);
-      handleWriteErr(e);
-    }
-  }
+/* ============ Stockage sur l'appareil ============ */
+const Local={
+  get(k,d){try{const v=localStorage.getItem("courses:"+k);return v?JSON.parse(v):d}catch(e){return d}},
+  put(k,v){try{localStorage.setItem("courses:"+k,JSON.stringify(v));return true}catch(e){toast("Enregistrement impossible sur cet appareil");return false}}
 };
-
-function subscribe(){
-  unsubs.forEach(u=>u());unsubs=[];
-  const timer=setTimeout(()=>{state.offline=true;renderBanner()},10000);
-  const ok=()=>{clearTimeout(timer);if(state.offline){state.offline=false;renderBanner()}};
-  const err=e=>{clearTimeout(timer);console.error(e);
-    if(e.code==="permission-denied"){state.denied=true;renderAll()}else{state.offline=true;renderBanner()}};
-  unsubs.push(onSnapshot(settingsRef,d=>{if(d.exists())state.settings={...state.settings,...d.data()};if(!d.metadata.fromCache)ok();renderAll()},err));
-  unsubs.push(onSnapshot(planRef,d=>{
-    if(d.exists()){const p=d.data();state.plan={items:p.items||[],checked:p.checked||{},have:p.have||{},extras:p.extras||[]}}
-    if(!d.metadata.fromCache)ok();renderAll()},err));
-}
-
-function initFirebase(){
-  if(!configured){renderLogin("setup");return}
-  const app=initializeApp(firebaseConfig);
-  auth=getAuth(app);
-  try{fs=initializeFirestore(app,{localCache:persistentLocalCache()})}catch(e){fs=initializeFirestore(app,{})}
-  planRef=doc(fs,"foyer","plan");settingsRef=doc(fs,"foyer","settings");
-  getRedirectResult(auth).catch(()=>{});
-  onAuthStateChanged(auth,u=>{
-    state.user=u;state.denied=false;
-    if(!u){unsubs.forEach(f=>f());unsubs=[];renderLogin("signin");return}
-    const email=(u.email||"").toLowerCase();
-    if(!allowedEmails.map(e=>e.toLowerCase()).includes(email)){renderLogin("denied");return}
-    showApp();subscribe();
-  });
-}
-async function login(){
-  const provider=new GoogleAuthProvider();
-  provider.setCustomParameters({prompt:"select_account"});
-  try{await signInWithPopup(auth,provider)}
-  catch(e){
-    if(e&&(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"))return signInWithRedirect(auth,provider);
-    if(e&&e.code==="auth/unauthorized-domain")toast("Domaine non autorisé dans Firebase (Authentication → Settings)");
-    else if(e&&e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")toast("Connexion impossible : "+(e.code||"erreur"));
-  }
-}
+state.settings={...state.settings,...Local.get("settings",{})};
+state.plan={...state.plan,...Local.get("plan",{})};
+const Store={
+  setSettings(s){state.settings={...state.settings,...s};Local.put("settings",state.settings);renderAll()},
+  setPlan(p){state.plan=p;Local.put("plan",p);renderAll()},
+  patchPlanMap(field,key,val){state.plan={...state.plan,[field]:{...(state.plan[field]||{}),[key]:val}};Local.put("plan",state.plan);renderAll()}
+};
 
 /* ============ Navigation ============ */
 let tab="menu";
-function showApp(){$("#tabs").classList.remove("hidden");setTab(tab)}
 function setTab(t){
   tab=t;$$(".view").forEach(v=>v.classList.toggle("active",v.id==="v-"+t));
   $$("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
@@ -144,18 +82,6 @@ function setTab(t){
 }
 window.setTab=setTab;
 $$("nav.tabs button").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
-
-function renderLogin(mode){
-  $("#tabs").classList.add("hidden");
-  $$(".view").forEach(v=>v.classList.toggle("active",v.id==="v-login"));
-  let h=`<div style="font-size:54px">🧺</div><h1>Mes Courses</h1>`;
-  if(mode==="setup")h+=`<p class="sub">L'appli n'est pas encore reliée à Firebase.<br>Complète <code>firebase-config.js</code> dans le dépôt.</p>`;
-  else if(mode==="denied")h+=`<p class="sub">L'adresse <b>${esc(state.user&&state.user.email)}</b> n'est pas autorisée pour ce foyer.</p><button class="btn ghost" id="lg-out">Changer de compte</button>`;
-  else h+=`<p class="sub">Menu de la semaine et liste de courses partagés avec le foyer.</p><button class="btn" id="lg-in"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>Se connecter avec Google</button>`;
-  $("#login-body").innerHTML=h;
-  const i=$("#lg-in");if(i)i.onclick=login;
-  const o=$("#lg-out");if(o)o.onclick=()=>signOut(auth);
-}
 
 /* ============ Liste de courses ============ */
 function planRecipes(){
@@ -198,10 +124,8 @@ const clonePlan=()=>JSON.parse(JSON.stringify(state.plan));
 /* ============ Rendu ============ */
 function renderBanner(){
   let h="";
-  if(state.denied)h=`<div class="banner">Firebase refuse l'accès : vérifie que les règles de sécurité (firestore.rules) sont publiées avec ton adresse.</div>`;
-  else if(state.offline)h=`<div class="banner">Connexion au foyer impossible pour l'instant : ce que tu vois peut ne pas être à jour.</div>`;
   if(state.recipesError)h+=`<div class="banner">Impossible de charger les recettes.</div>`;
-  $("#banner").innerHTML=state.user?h:"";
+  $("#banner").innerHTML=h;
 }
 
 let drawN=null;
@@ -212,7 +136,7 @@ function renderMenu(){
   drawN=Math.max(1,Math.min(drawN||1,n));
   let h=`<div class="card menu-pick">
     <div class="sub">Nombre de recettes à tirer</div>
-    <div class="stepper big"><button id="dn-">−</button><span>${drawN}</span><button id="dn+">+</button></div>
+    <div class="stepper big"><button id="dn-minus">−</button><span>${drawN}</span><button id="dn-plus">+</button></div>
     <button class="btn block" id="draw"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>${items.length?"Nouveau tirage":"Tirer au sort"}</button>
     <div class="sub">parmi tes ${n} recette${n>1?"s":""}</div></div>`;
   if(items.length){
@@ -231,8 +155,8 @@ function renderMenu(){
   }
   $("#menu-body").innerHTML=h;
   $("#menu-sub").textContent=items.length?`${items.length} recette${items.length>1?"s":""} au menu`:"Combien de recettes cette semaine ?";
-  $("#dn-").onclick=()=>{drawN=Math.max(1,drawN-1);renderMenu()};
-  $("#dn+").onclick=()=>{drawN=Math.min(n,drawN+1);renderMenu()};
+  $("#dn-minus").onclick=()=>{drawN=Math.max(1,drawN-1);renderMenu()};
+  $("#dn-plus").onclick=()=>{drawN=Math.min(n,drawN+1);renderMenu()};
   $("#draw").onclick=doDraw;
   const add=$("#add-to-menu");if(add)add.onclick=openPicker;
   $$("[data-sv]").forEach(b=>b.onclick=()=>{const p=clonePlan();const it=p.items[+b.dataset.sv];it.servings=Math.max(1,(it.servings||state.settings.people)+(+b.dataset.d));Store.setPlan(p)});
@@ -366,13 +290,10 @@ $("#copy-list").onclick=async()=>{
 
 function renderSettings(){
   $("#ppl").textContent=state.settings.people;
-  $("#who").textContent=state.user?state.user.email:"";
 }
 $$("[data-ppl]").forEach(b=>b.onclick=()=>Store.setSettings({people:Math.max(1,Math.min(20,state.settings.people+(+b.dataset.ppl)))}));
-$("#logout").onclick=()=>signOut(auth);
 
 function renderAll(){
-  if(!state.user)return;
   renderBanner();renderMenu();renderRecipes();renderList();renderSettings();
 }
 
@@ -402,5 +323,6 @@ function openPicker(){
 }
 
 /* ============ Démarrage ============ */
+setTab("menu");
+renderAll();
 loadRecipes();
-initFirebase();
