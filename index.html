@@ -31,9 +31,10 @@
     <header class="top">
       <div><h1>Recettes</h1><div class="sub" id="rec-count"></div></div>
     </header>
-    <div class="add-grid" style="grid-template-columns:1fr 1fr">
+    <div class="add-grid">
       <label class="btn soft" id="add-pdf" for="pdf-input" style="flex-direction:column;padding:12px 6px;font-size:13px"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Photo ou PDF</label>
-      <button class="btn soft" id="add-form"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Saisir une recette</button>
+      <button class="btn soft" id="add-text"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></svg>Coller un texte</button>
+      <button class="btn soft" id="add-form"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Saisir à la main</button>
     </div>
     <input type="file" id="pdf-input" accept="image/*,application/pdf,.pdf" class="visually-hidden">
     <div class="card" style="margin-bottom:12px">

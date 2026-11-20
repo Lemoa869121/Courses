@@ -71,8 +71,8 @@ function toLines(items) {
 }
 
 const SECTION = {
-  ingredients: /^ingr[ée]dients?\s*:?$/i,
-  steps: /^(instructions?|pr[ée]paration|[ée]tapes?|recette)\s*:?$/i,
+  ingredients: /^(les\s+)?ingr[ée]dients?\b[^:]{0,35}:?$/i,
+  steps: /^(les\s+)?(instructions?|pr[ée]paration|[ée]tapes?|recette|d[ée]roul[ée]|m[ée]thode)\b[^:]{0,25}:?$/i,
   notes: /^(notes?|astuces?|conseils?)\s*:?$/i,
 };
 
@@ -158,7 +158,10 @@ export function parseRecipeText(text) {
     .filter(l => (l.match(/[a-zàâçéèêëîïôûùüÿœ0-9]/gi) || []).length >= 2 && !/^[=\-_*~.]{3,}$/.test(l));
   let section = "head";
   const notes = [];
+  const hasIngHeader = lines.some(l => SECTION.ingredients.test(l));
+  const CTA = /^(enregistre|sauvegarde|abonne|partage|like|commente|n'h[ée]site|suis[- ]moi|follow|lien en bio|retrouve|tag|identifie|dis[- ]moi|bon app)/i;
   for (const line of lines) {
+    if (CTA.test(line)) continue;
     const sv = line.match(/pour\s+(\d+)\s+(personnes?|parts?|portions?)/i);
     if (sv && !recipe.servings) recipe.servings = +sv[1];
     const t = line.match(/(?:pr[ée]paration|cuisson|temps)\s*:?\s*(\d+)\s*min/i);
@@ -171,12 +174,16 @@ export function parseRecipeText(text) {
       if (stepHead) recipe.steps.push(stepHead[2] || "");
       continue;
     }
+    if ((section === "head" || section === "ingredients") && recipe.ingredients.length && /^\d{1,2}\s*[.)]\s+[a-zàâçéèêëîïôûùüÿœ]/i.test(line) && !/^\d{1,2}\s*[.)]\s+\d/.test(line)) section = "steps";
     if (section === "head" || section === "ingredients") {
       if (!recipe.name && section === "head" && !QTY_START.test(line) && line.length < 80) { recipe.name = line; continue; }
+      if (section === "head" && hasIngHeader) { notes.push(line); continue; }
       if (/^\(/.test(line) || (notes.length && /^\(/.test(notes[notes.length - 1]) && !/\)/.test(notes[notes.length - 1]))) { notes.push(line); continue; }
       if (QTY_START.test(line) || line.length < 50) {
-        const ing = parseIngredient(line.replace(/\s*\(.*$/, ""));
-        if (ing && ing.name) recipe.ingredients.push(ing);
+        const base = line.replace(/\s*\(.*$/, "");
+        const parts = /,/.test(base) && !QTY_START.test(base.split(",")[1] || "x") && base.split(",").every(s => s.trim().split(" ").length <= 3)
+          ? base.split(/\s*,\s*/) : (/,/.test(base) && base.split(",").filter(s => QTY_START.test(s.trim())).length > 1 ? base.split(/\s*,\s*/) : [base]);
+        for (const part of parts) { const ing = parseIngredient(part); if (ing && ing.name) recipe.ingredients.push(ing); }
         const par = line.match(/\((.*)\)?$/); if (par) notes.push(par[0]);
         continue;
       }
@@ -198,4 +205,19 @@ export function parseRecipeText(text) {
 // Texte brut d'un PDF, ligne par ligne (pour parseRecipeText).
 export function itemsToText(pages) {
   return pages.map(items => toLines(items).map(l => l.items.map(i => i.str).join(" ")).join("\n")).join("\n");
+}
+
+// Nettoyage d'un texte collé (légende Instagram, message…) : émojis, hashtags, puces.
+export function cleanPastedText(text) {
+  return String(text || "")
+    .replace(/(\d)\uFE0F?\u20E3/g, "$1. ")               // 1️⃣ → 1.
+    .replace(/[\u2460-\u2473]/g, c => (c.charCodeAt(0) - 0x245F) + ". ") // ① → 1.
+    .replace(/[#@][\p{L}\p{N}_.]+/gu, "")                 // #hashtags @mentions
+    .replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D\u2022\u25AA\u25B6\u27A1\u2794\u2192\u2713\u2714]/gu, " ")
+    .replace(/\s+((?:les\s+)?(?:ingr[ée]dients?|pr[ée]paration|[ée]tapes?|instructions?)[^:\n.!?]{0,35}:)/gi, "\n$1")
+    .replace(/([.!?:])\s+(\d{1,2}[.)]\s)/g, "$1\n$2")
+    .split(/\r?\n/).map(l => l.replace(/^\s*[-–—*·]\s*/, "").replace(/\s+/g, " ").trim()).join("\n")
+    // « Ingrédients : 200 g de farine, 2 œufs, … » sur une seule ligne → une ligne par ingrédient
+    .replace(/^((?:les\s+)?ingr[ée]dients?[^:\n]{0,35}:)\s*(.+)$/gim, (m, head, list) =>
+      list.includes(",") ? head + "\n" + list.split(/\s*[,;]\s*/).join("\n") : m);
 }

@@ -4,7 +4,7 @@ Générateur de menus et de listes de courses pour le foyer, façon Jow.
 
 - **Menu** : tire au sort N recettes, ajuste le nombre de personnes, change ou retire une recette.
 - **Liste** : ingrédients additionnés, adaptés aux portions, triés par rayon ; « J'ai » pour ce qui est déjà au placard ; ajout d'articles libres.
-- **Ajout de recettes sur le téléphone** : import d'un PDF (exports WeChef notamment) ou saisie dans un formulaire ; enregistrées sur l'appareil, exportables en JSON.
+- **Ajout de recettes sur le téléphone** : photo ou PDF (exports WeChef notamment), texte collé (légende Instagram…) ou saisie dans un formulaire ; enregistrées sur l'appareil, exportables en JSON.
 - **Recherche par ingrédients** : les recettes qui utilisent le plus ce que tu as remontent en tête.
 
 En ligne : https://lemoa869121.github.io/Courses/

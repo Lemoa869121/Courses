@@ -1,4 +1,4 @@
-import { extractItems, parseRecipeItems, parseRecipeText, itemsToText } from "./pdfimport.js";
+import { extractItems, parseRecipeItems, parseRecipeText, itemsToText, cleanPastedText } from "./pdfimport.js";
 
 /* ============ Constantes ============ */
 const UNITS = ["","g","kg","ml","cl","l","pièce","c. à s.","c. à c.","pincée","gousse","tranche","botte","sachet","boîte","pot","paquet"];
@@ -350,7 +350,7 @@ function openEditor(r){
   if(!edit.ingredients||!edit.ingredients.length)edit.ingredients=[blankIng()];
   const isNew=!state.recipes.some(x=>x.id===edit.id);
   openSheet(`<div class="row"><h2 class="grow">${isNew?"Nouvelle recette":"Modifier la recette"}</h2><button class="icon-btn" id="ed-close">${ICON_X}</button></div>
-  ${edit._fromPdf?`<div class="banner" style="margin-top:10px">${edit._fromPhoto?"Lecture d'une photo : vérifie bien les quantités et les noms, des erreurs sont possibles (ex. 209 g au lieu de 200 g).":"Vérifie ce que j'ai lu dans le PDF avant d'enregistrer, surtout les noms d'ingrédients et les rayons."}</div>`:""}
+  ${edit._fromPdf?`<div class="banner" style="margin-top:10px">${edit._fromText?"Vérifie ce que j'ai compris du texte avant d'enregistrer : nom, quantités et rayons.":edit._fromPhoto?"Lecture d'une photo : vérifie bien les quantités et les noms, des erreurs sont possibles (ex. 209 g au lieu de 200 g).":"Vérifie ce que j'ai lu dans le PDF avant d'enregistrer, surtout les noms d'ingrédients et les rayons."}</div>`:""}
   <label class="f">Nom</label><input type="text" id="ed-name" value="${esc(edit.name)}" placeholder="Ex. : Curry de pois chiches">
   <div class="row" style="gap:10px">
     <div class="grow"><label class="f">Pour combien de personnes ?</label><input type="number" id="ed-serv" min="1" value="${esc(edit.servings||"")}"></div>
@@ -478,6 +478,26 @@ async function importFile(file){
 }
 $("#pdf-input").onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(f)importFile(f)};
 $("#add-form").onclick=()=>openEditor();
+$("#add-text").onclick=()=>{
+  const canRead=!!(navigator.clipboard&&navigator.clipboard.readText);
+  openSheet(`<div class="row"><h2 class="grow">Coller un texte</h2><button class="icon-btn" id="tx-close">${ICON_X}</button></div>
+  <p class="sub">Légende Instagram ou TikTok, recette copiée d'un site, d'un message… Sur Instagram : appuie longuement sur la légende (ou « … » puis « Copier »).</p>
+  ${canRead?`<button class="btn ghost block" id="tx-paste" style="margin-top:6px">Coller ce que j'ai copié</button>`:""}
+  <textarea id="tx-text" style="min-height:220px;margin-top:10px" placeholder="Colle le texte de la recette ici…"></textarea>
+  <button class="btn block" id="tx-go" style="margin-top:12px">Lire la recette</button>`);
+  $("#tx-close").onclick=closeSheet;
+  const tp=$("#tx-paste");
+  if(tp)tp.onclick=async()=>{try{const t=await navigator.clipboard.readText();if(t){$("#tx-text").value=t}else toast("Rien à coller")}catch(e){toast("Appuie longuement dans la zone de texte puis « Coller »");$("#tx-text").focus()}};
+  $("#tx-go").onclick=()=>{
+    const t=$("#tx-text").value.trim();
+    if(t.length<15){toast("Colle le texte complet de la recette");return}
+    const parsed=parseRecipeText(cleanPastedText(t));
+    if(!parsed.ingredients.length&&!parsed.steps.length){toast("Je n'ai pas trouvé de recette dans ce texte");return}
+    parsed.ingredients=parsed.ingredients.map(i=>({...i,aisle:guessAisle(i.name)}));
+    if(!parsed.ingredients.length)toast("Ingrédients non trouvés : ajoute-les à la main");
+    openEditor({id:"local-"+uid(),category:"",...parsed,_fromPdf:true,_fromText:true});
+  };
+};
 $("#export-mine").onclick=async()=>{
   const mine=Local.get("myrecipes",[]);
   if(!mine.length){toast("Aucune recette ajoutée sur ce téléphone");return}
